@@ -1,23 +1,85 @@
 import { Link, useParams, useSearchParams } from "react-router-dom";
+import { createBooking } from "./api/bookings";
+import { useState } from "react";
+
+type Phase = "editing" | "submitting" | "confirmed";
 
 export function BookPage() {
   const { planId } = useParams();
   const [sp] = useSearchParams();
   const date = sp.get("date") ?? "";
-  const pax = sp.get("pax") ?? "";
+  const pax = Math.max(1, Number(sp.get("pax") ?? "1"));
+
+  const [phase, setPhase] = useState<Phase>("editing");
+  const [error, setError] = useState<string | null>(null);
+  const [bookingId, setBookingId] = useState<string | null>(null);
+
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+
+    if (!planId) {
+      setError("planIdがありません");
+      return;
+    }
+
+    try {
+      setPhase("submitting");
+      const res = await createBooking({ planId, date, pax, name, email });
+      setBookingId(res.bookingId);
+      setPhase("confirmed");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "予約に失敗しました");
+      setPhase("editing");
+    }
+  }
 
   return (
     <div style={{ padding: 24 }}>
       <h1>予約入力</h1>
-      <p>planId: {planId}</p>
-      <p>date: {date}</p>
-      <p>pax: {pax}</p>
 
-      <Link to={`/plan/${planId}?date=${date}&pax=${pax}`}>
-        ← プラン詳細へ戻る
-      </Link>
-      <br />
-      <Link to="/">最初に戻る</Link>
+      <p>
+        planId={planId} / date={date} / pax={pax}
+      </p>
+
+      {error && <p style={{ color: "crimson" }}>Error: {error}</p>}
+
+      {phase === "editing" && (
+        <form
+          onSubmit={onSubmit}
+          style={{ display: "grid", gap: 12, maxWidth: 360 }}
+        >
+          <label>
+            氏名
+            <input value={name} onChange={(e) => setName(e.target.value)} />
+          </label>
+
+          <label>
+            メール
+            <input value={email} onChange={(e) => setEmail(e.target.value)} />
+          </label>
+
+          <button type="submit">予約する</button>
+        </form>
+      )}
+
+      {phase === "submitting" && <p>送信中... (Loading)</p>}
+
+      {phase === "confirmed" && (
+        <div style={{ border: "1px solid #ccc", padding: 12, borderRadius: 8 }}>
+          <h2 style={{ marginTop: 0 }}>予約完了</h2>
+          <p>予約ID: {bookingId}</p>
+
+          <Link to={`/plan/${planId}?date=${date}&pax=${pax}`}>
+            ← プラン詳細
+          </Link>
+          <br />
+          <Link to="/">最初に戻る</Link>
+        </div>
+      )}
     </div>
   );
 }

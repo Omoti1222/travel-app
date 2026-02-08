@@ -37,7 +37,16 @@ const items: Item[] = [
     to: "FUK",
     price: 26000,
   },
+  {
+    planId: "p5",
+    title: "大阪 食い倒れプラン",
+    from: "TYO",
+    to: "OSA",
+    price: 22000,
+  },
 ];
+
+const PAGE_SIZE = 2;
 
 export function ResultsPage() {
   const [sp, setSp] = useSearchParams();
@@ -49,6 +58,8 @@ export function ResultsPage() {
 
   const sort = (sp.get("sort") ?? "price_asc") as "price_asc" | "price_desc";
 
+  const page = Math.max(1, Number(sp.get("page") ?? "1"));
+
   const filtered = items.filter((it) => {
     const okFrom = from ? it.from === from : true;
     const okTo = to ? it.to === to : true;
@@ -59,10 +70,22 @@ export function ResultsPage() {
     return sort === "price_asc" ? a.price - b.price : b.price - a.price;
   });
 
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const start = (safePage - 1) * PAGE_SIZE;
+  const paged = sorted.slice(start, start + PAGE_SIZE);
+
   function changeSort(next: "price_asc" | "price_desc") {
     const nextSp = new URLSearchParams(sp);
     nextSp.set("sort", next);
+    nextSp.set("page", "1");
 
+    setSp(nextSp);
+  }
+
+  function changePage(nextPage: number) {
+    const nextSp = new URLSearchParams(sp);
+    nextSp.set("page", String(nextPage));
     setSp(nextSp);
   }
 
@@ -95,11 +118,11 @@ export function ResultsPage() {
         </button>
       </div>
 
-      {sorted.length === 0 ? (
+      {paged.length === 0 ? (
         <p>該当なし(条件を再入力してください)</p>
       ) : (
         <ul>
-          {sorted.map((it) => (
+          {paged.map((it) => (
             <li key={it.planId} style={{ marginBottom: 10 }}>
               <Link to={`/plan/${it.planId}?date=${date}&pax=${pax}`}>
                 {it.title}
@@ -110,7 +133,32 @@ export function ResultsPage() {
         </ul>
       )}
 
-      <Link to="/">検索に戻る</Link>
+      {/* ページ操作 */}
+      <div style={{ marginTop: 12 }}>
+        <button
+          type="button"
+          onClick={() => changePage(safePage - 1)}
+          disabled={safePage <= 1}
+        >
+          ←前に戻る
+        </button>
+
+        <span style={{ margin: "0 12px" }}>
+          {safePage} / {totalPages}
+        </span>
+
+        <button
+          type="button"
+          onClick={() => changePage(safePage + 1)}
+          disabled={safePage >= totalPages}
+        >
+          次へ →
+        </button>
+      </div>
+
+      <div style={{ marginTop: 16 }}>
+        <Link to="/">検索に戻る</Link>
+      </div>
     </div>
   );
 }

@@ -1,25 +1,32 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 export function SearchPage() {
   const nav = useNavigate();
+  const [sp] = useSearchParams();
 
-  const [from, setFrom] = useState("TYO");
-  const [to, setTo] = useState("OSA");
-  const [date, setDate] = useState("2026-02-01");
-  const [pax, setPax] = useState(2);
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
+  const [date, setDate] = useState("");
+  const [pax, setPax] = useState(1);
+
+  useEffect(() => {
+    setFrom(sp.get("from") ?? "");
+    setTo(sp.get("to") ?? "");
+    setDate(sp.get("date") ?? "");
+    setPax(Math.max(1, Number(sp.get("pax") ?? "1")));
+  }, [sp]);
 
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    const qs = new URLSearchParams({
-      from,
-      to,
-      date,
-      pax: String(pax),
-    }).toString();
+    const p = new URLSearchParams();
+    if (from) p.set("from", from);
+    if (to) p.set("to", to);
+    if (date) p.set("date", date);
+    p.set("pax", String(Math.max(1, pax)));
 
-    nav(`/results?${qs}`);
+    nav(`/results?${p.toString()}`);
   }
 
   return (
@@ -32,12 +39,20 @@ export function SearchPage() {
       >
         <label>
           出発地
-          <input value={from} onChange={(e) => setFrom(e.target.value)} />
+          <input
+            value={from}
+            onChange={(e) => setFrom(e.target.value)}
+            placeholder="例: TYO"
+          />
         </label>
 
         <label>
           目的地
-          <input value={to} onChange={(e) => setTo(e.target.value)} />
+          <input
+            value={to}
+            onChange={(e) => setTo(e.target.value)}
+            placeholder="例: OSA"
+          />
         </label>
 
         <label>
@@ -55,7 +70,7 @@ export function SearchPage() {
             type="number"
             min={1}
             value={pax}
-            onChange={(e) => setPax(Number(e.target.value))}
+            onChange={(e) => setPax(Math.max(1, Number(e.target.value || "1")))}
           />
         </label>
 
