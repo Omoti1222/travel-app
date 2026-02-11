@@ -1,6 +1,7 @@
 import { Link, useParams, useSearchParams } from "react-router-dom";
-import { createBooking } from "./api/bookings";
 import { useState } from "react";
+import { createBookingUsecase } from "./usecases/createBookingUsecase";
+import { toAppError } from "./domain/errors";
 
 type Phase = "editing" | "submitting" | "confirmed";
 
@@ -28,11 +29,26 @@ export function BookPage() {
 
     try {
       setPhase("submitting");
-      const res = await createBooking({ planId, date, pax, name, email });
+      const res = await createBookingUsecase({
+        planId,
+        date,
+        pax,
+        name,
+        email,
+      });
       setBookingId(res.bookingId);
       setPhase("confirmed");
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "予約に失敗しました");
+      const err = toAppError(e);
+
+      if (err.code === "INPUT") {
+        setError(err.message);
+      } else if (err.code === "NETWORK") {
+        setError(err.message);
+      } else {
+        setError("予約に失敗しました(再試行してください)");
+      }
+
       setPhase("editing");
     }
   }
