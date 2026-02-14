@@ -18,7 +18,10 @@ export function BookPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
 
+  console.log("phase now =", phase);
+
   async function onSubmit(e: React.FormEvent) {
+    console.log("submit", { name, email, planId, date, pax });
     e.preventDefault();
     setError(null);
 

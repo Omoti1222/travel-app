@@ -1,50 +1,6 @@
+import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-
-type Item = {
-  planId: string;
-  title: string;
-  from: string;
-  to: string;
-  price: number;
-};
-
-const items: Item[] = [
-  {
-    planId: "p1",
-    title: "新幹線+ホテル お得プラン",
-    from: "TYO",
-    to: "OSA",
-    price: 24000,
-  },
-  {
-    planId: "p2",
-    title: "飛行機+ホテル 早割プラン",
-    from: "TYO",
-    to: "OSA",
-    price: 28000,
-  },
-  {
-    planId: "p3",
-    title: "札幌 食べ歩きプラン",
-    from: "TYO",
-    to: "CTS",
-    price: 35000,
-  },
-  {
-    planId: "p4",
-    title: "福岡 週末満喫プラン",
-    from: "OSA",
-    to: "FUK",
-    price: 26000,
-  },
-  {
-    planId: "p5",
-    title: "大阪 食い倒れプラン",
-    from: "TYO",
-    to: "OSA",
-    price: 22000,
-  },
-];
+import { fetchPlans, type Plan } from "./api/plans";
 
 const PAGE_SIZE = 2;
 
@@ -55,20 +11,50 @@ export function ResultsPage() {
   const to = sp.get("to") ?? "";
   const date = sp.get("date") ?? "";
   const pax = Number(sp.get("pax") ?? "1");
-
   const sort = (sp.get("sort") ?? "price_asc") as "price_asc" | "price_desc";
-
   const page = Math.max(1, Number(sp.get("page") ?? "1"));
 
-  const filtered = items.filter((it) => {
-    const okFrom = from ? it.from === from : true;
-    const okTo = to ? it.to === to : true;
-    return okFrom && okTo;
-  });
+  const [plans, setPlans] = useState<Plan[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const sorted = [...filtered].sort((a, b) => {
-    return sort === "price_asc" ? a.price - b.price : b.price - a.price;
-  });
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+
+    fetchPlans()
+      .then((data) => {
+        if (cancelled) return;
+        setPlans(date);
+      })
+      .catch((e: unknown) => {
+        if (cancelled) return;
+        setError(e instanceof Error ? e.message : "読み込みに失敗しました");
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const filtered = useMemo(() => {
+    return plans.filter((it) => {
+      const okFrom = from ? it.from === from : true;
+      const okTo = to ? it.to === to : true;
+      return okFrom && okTo;
+    });
+  }, [plans, from, to]);
+
+  const sorted = useMemo(() => {
+    return [...filtered].sort((a, b) => {
+      return sort === "price_asc" ? a.price - b.price : b.price - a.price;
+    });
+  }, [filtered, sort]);
 
   const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
@@ -118,43 +104,49 @@ export function ResultsPage() {
         </button>
       </div>
 
-      {paged.length === 0 ? (
-        <p>該当なし(条件を再入力してください)</p>
-      ) : (
-        <ul>
-          {paged.map((it) => (
-            <li key={it.planId} style={{ marginBottom: 10 }}>
-              <Link to={`/plan/${it.planId}?date=${date}&pax=${pax}`}>
-                {it.title}
-              </Link>
-              <div>{it.price} 円</div>
-            </li>
-          ))}
-        </ul>
+      {loading && <p>読み込み中...</p>}
+      {error && <p style={{ color: "crimson" }}>Error: {error}</p>}
+
+      {!loading && !error && (
+        <>
+          {paged.length === 0 ? (
+            <p>該当なし(条件を再入力してください)</p>
+          ) : (
+            <ul>
+              {paged.map((it) => (
+                <li key={it.planId} style={{ marginBottom: 10 }}>
+                  <Link to={`/plan/${it.planId}?date=${date}&pax=${pax}`}>
+                    {it.title}
+                  </Link>
+                  <div>{it.price} 円</div>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div style={{ marginTop: 12 }}>
+            <button
+              type="button"
+              onClick={() => changePage(safePage - 1)}
+              disabled={safePage <= 1}
+            >
+              ←前に戻る
+            </button>
+
+            <span style={{ margin: "0, 12px" }}>
+              {safePage} / {totalPages}
+            </span>
+
+            <button
+              type="button"
+              onClick={() => changePage(safePage + 1)}
+              disabled={safePage >= totalPages}
+            >
+              次へ→
+            </button>
+          </div>
+        </>
       )}
-
-      {/* ページ操作 */}
-      <div style={{ marginTop: 12 }}>
-        <button
-          type="button"
-          onClick={() => changePage(safePage - 1)}
-          disabled={safePage <= 1}
-        >
-          ←前に戻る
-        </button>
-
-        <span style={{ margin: "0 12px" }}>
-          {safePage} / {totalPages}
-        </span>
-
-        <button
-          type="button"
-          onClick={() => changePage(safePage + 1)}
-          disabled={safePage >= totalPages}
-        >
-          次へ →
-        </button>
-      </div>
 
       <div style={{ marginTop: 16 }}>
         <Link to="/">検索に戻る</Link>

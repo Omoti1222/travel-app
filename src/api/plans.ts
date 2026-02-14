@@ -34,6 +34,11 @@ const DB: Plan[] = [
   },
 ];
 
+export async function fetchPlans(): Promise<Plan[]> {
+  await new Promise((r) => setTimeout(r, 300));
+  return DB;
+}
+
 export async function fetchPlanById(planId: string): Promise<Plan> {
   await new Promise((r) => setTimeout(r, 600));
 

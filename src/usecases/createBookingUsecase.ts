@@ -7,6 +7,8 @@ import { AppError } from "../domain/errors";
 
 export type CreateBookingInput = BookingRequest;
 
+let inFlight = false;
+
 function validate(input: CreateBookingInput) {
   if (!input.planId) throw new AppError("INPUT", "planIdがありません");
   if (!input.date) throw new AppError("INPUT", "日付を選択してください");
@@ -19,12 +21,19 @@ function validate(input: CreateBookingInput) {
 export async function createBookingUsecase(
   input: CreateBookingInput,
 ): Promise<BookingResult> {
+  if (inFlight) {
+    throw new AppError("INPUT", "送信中、しばらくお待ちください");
+  }
+
   validate(input);
 
+  inFlight = true;
   try {
     const res = await createBooking(input);
     return res;
   } catch (e: unknown) {
+    if (e instanceof AppError) throw e;
+
     if (e instanceof Error) {
       const msg = e.message || "予約に失敗しました";
       const looksNetwork =
@@ -40,5 +49,7 @@ export async function createBookingUsecase(
     }
 
     throw new AppError("UNKNOWN", "予約に失敗しました");
+  } finally {
+    inFlight = false;
   }
 }
