@@ -7,6 +7,8 @@ export function PlanPage() {
   const [sp] = useSearchParams();
   const date = sp.get("date") ?? "";
   const pax = sp.get("pax") ?? "";
+  const returnTo = sp.get("returnTo");
+  const backUrl = returnTo ? decodeURIComponent(returnTo) : "/results";
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -89,14 +91,16 @@ export function PlanPage() {
           <p>{plan.price} 円〜</p>
           <p>{plan.description}</p>
 
-          <Link to={`/book/${planId}?date=${date}&pax=${pax}`}>予約へ</Link>
+          <Link
+            to={`/book/${planId}?date=${date}&pax=${pax}&returnTo=${encodeURIComponent(backUrl)}`}
+          >
+            予約へ
+          </Link>
         </div>
       )}
 
       <div style={{ marginTop: 16 }}>
-        <Link to="/results?from=TYO&to=OSA&date=2026-02-01&pax=2">
-          ←結果に戻る
-        </Link>
+        <Link to={backUrl}>←結果に戻る</Link>
       </div>
     </div>
   );

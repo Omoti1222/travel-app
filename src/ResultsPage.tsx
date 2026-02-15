@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { fetchPlans, type Plan } from "./api/plans";
 
@@ -9,24 +9,32 @@ export function ResultsPage() {
 
   const from = sp.get("from") ?? "";
   const to = sp.get("to") ?? "";
-  const date = sp.get("date") ?? "";
+  const travelDate = sp.get("date") ?? "";
   const pax = Number(sp.get("pax") ?? "1");
   const sort = (sp.get("sort") ?? "price_asc") as "price_asc" | "price_desc";
   const page = Math.max(1, Number(sp.get("page") ?? "1"));
 
-  const [plans, setPlans] = useState<Plan[]>([]);
+  const returnTo = `/results?${sp.toString()}`;
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [pagedPlans, setPagedPlans] = useState<Plan[]>([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [safePage, setSafePage] = useState(1);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setError(null);
 
-    fetchPlans()
-      .then((data) => {
+    fetchPlans({ from, to, sort, page, pageSize: PAGE_SIZE })
+      .then((res) => {
+        console.log("fetchPlans data =", res);
         if (cancelled) return;
-        setPlans(date);
+        setPagedPlans(res.plans);
+        setTotalPages(res.totalPages);
+        setSafePage(res.page);
       })
       .catch((e: unknown) => {
         if (cancelled) return;
@@ -40,26 +48,7 @@ export function ResultsPage() {
     return () => {
       cancelled = true;
     };
-  }, []);
-
-  const filtered = useMemo(() => {
-    return plans.filter((it) => {
-      const okFrom = from ? it.from === from : true;
-      const okTo = to ? it.to === to : true;
-      return okFrom && okTo;
-    });
-  }, [plans, from, to]);
-
-  const sorted = useMemo(() => {
-    return [...filtered].sort((a, b) => {
-      return sort === "price_asc" ? a.price - b.price : b.price - a.price;
-    });
-  }, [filtered, sort]);
-
-  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
-  const safePage = Math.min(page, totalPages);
-  const start = (safePage - 1) * PAGE_SIZE;
-  const paged = sorted.slice(start, start + PAGE_SIZE);
+  }, [from, to, sort, page]);
 
   function changeSort(next: "price_asc" | "price_desc") {
     const nextSp = new URLSearchParams(sp);
@@ -80,7 +69,7 @@ export function ResultsPage() {
       <h1>検索結果</h1>
 
       <p>
-        条件: from={from} to={to} date={date} pax={pax} sort={sort}
+        条件: from={from} to={to} date={travelDate} pax={pax} sort={sort}
       </p>
 
       <div style={{ marginBottom: 12 }}>
@@ -109,13 +98,15 @@ export function ResultsPage() {
 
       {!loading && !error && (
         <>
-          {paged.length === 0 ? (
+          {pagedPlans.length === 0 ? (
             <p>該当なし(条件を再入力してください)</p>
           ) : (
             <ul>
-              {paged.map((it) => (
+              {pagedPlans.map((it) => (
                 <li key={it.planId} style={{ marginBottom: 10 }}>
-                  <Link to={`/plan/${it.planId}?date=${date}&pax=${pax}`}>
+                  <Link
+                    to={`/plan/${it.planId}?date=${travelDate}&pax=${pax}&returnTo=${encodeURIComponent(returnTo)}`}
+                  >
                     {it.title}
                   </Link>
                   <div>{it.price} 円</div>
@@ -133,7 +124,7 @@ export function ResultsPage() {
               ←前に戻る
             </button>
 
-            <span style={{ margin: "0, 12px" }}>
+            <span style={{ margin: "0 12px" }}>
               {safePage} / {totalPages}
             </span>
 

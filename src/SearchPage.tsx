@@ -5,10 +5,15 @@ export function SearchPage() {
   const nav = useNavigate();
   const [sp] = useSearchParams();
 
-  const [from, setFrom] = useState("");
-  const [to, setTo] = useState("");
-  const [date, setDate] = useState("");
-  const [pax, setPax] = useState(1);
+  const initialFrom = sp.get("from") ?? "";
+  const initialTo = sp.get("to") ?? "";
+  const initialDate = sp.get("date") ?? "";
+  const initialPax = Math.max(1, Number(sp.get("pax") ?? "1"));
+
+  const [from, setFrom] = useState(initialFrom);
+  const [to, setTo] = useState(initialTo);
+  const [date, setDate] = useState(initialDate);
+  const [pax, setPax] = useState(initialPax);
 
   useEffect(() => {
     setFrom(sp.get("from") ?? "");

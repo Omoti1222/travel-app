@@ -10,6 +10,8 @@ export function BookPage() {
   const [sp] = useSearchParams();
   const date = sp.get("date") ?? "";
   const pax = Math.max(1, Number(sp.get("pax") ?? "1"));
+  const returnTo = sp.get("returnTo");
+  const backUrl = returnTo ? decodeURIComponent(returnTo) : "/results";
 
   const [phase, setPhase] = useState<Phase>("editing");
   const [error, setError] = useState<string | null>(null);
@@ -92,11 +94,13 @@ export function BookPage() {
           <h2 style={{ marginTop: 0 }}>予約完了</h2>
           <p>予約ID: {bookingId}</p>
 
-          <Link to={`/plan/${planId}?date=${date}&pax=${pax}`}>
+          <Link
+            to={`/plan/${planId}?date=${date}&pax=${pax}&returnTo=${encodeURIComponent(backUrl)}`}
+          >
             ← プラン詳細
           </Link>
           <br />
-          <Link to="/">最初に戻る</Link>
+          <Link to={backUrl}>最初に戻る</Link>
         </div>
       )}
     </div>
