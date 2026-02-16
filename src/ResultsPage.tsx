@@ -1,18 +1,24 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { fetchPlans, type Plan } from "./api/plans";
+import { getEnum, getIntMin, getString } from "./utils/query";
 
 const PAGE_SIZE = 2;
 
 export function ResultsPage() {
   const [sp, setSp] = useSearchParams();
 
-  const from = sp.get("from") ?? "";
-  const to = sp.get("to") ?? "";
-  const travelDate = sp.get("date") ?? "";
-  const pax = Number(sp.get("pax") ?? "1");
-  const sort = (sp.get("sort") ?? "price_asc") as "price_asc" | "price_desc";
-  const page = Math.max(1, Number(sp.get("page") ?? "1"));
+  const from = getString(sp, "from");
+  const to = getString(sp, "to");
+  const travelDate = getString(sp, "date");
+  const pax = getIntMin(sp, "pax", 1, 1);
+  const sort = getEnum(
+    sp,
+    "sort",
+    ["price_asc", "price_desc"] as const,
+    "price_asc",
+  );
+  const page = getIntMin(sp, "page", 1, 1);
 
   const returnTo = `/results?${sp.toString()}`;
 
