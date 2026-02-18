@@ -1,14 +1,14 @@
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { fetchPlanById, type Plan } from "./api/plans";
 import { useEffect, useState } from "react";
+import { getIntMin, getReturnTo, getString } from "./utils/query";
 
 export function PlanPage() {
   const { planId } = useParams();
   const [sp] = useSearchParams();
-  const date = sp.get("date") ?? "";
-  const pax = sp.get("pax") ?? "";
-  const returnTo = sp.get("returnTo");
-  const backUrl = returnTo ? decodeURIComponent(returnTo) : "/results";
+  const date = getString(sp, "date");
+  const pax = getIntMin(sp, "pax", 1, 1);
+  const backUrl = getReturnTo(sp);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
