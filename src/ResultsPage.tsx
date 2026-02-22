@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { fetchPlans, type Plan } from "./api/plans";
-import { getEnum, getIntMin, getString } from "./utils/query";
+import { getEnum, getIntMin, getString, setParams } from "./utils/query";
 
 const PAGE_SIZE = 2;
 
@@ -18,9 +18,14 @@ export function ResultsPage() {
     ["price_asc", "price_desc"] as const,
     "price_asc",
   );
+
+  const prevFrom = useRef(from);
+  const prevTo = useRef(to);
   const page = getIntMin(sp, "page", 1, 1);
 
   const returnTo = `/results?${sp.toString()}`;
+  console.log("returnTo = ", returnTo);
+  console.log("sp.toString() =", sp.toString());
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -28,6 +33,17 @@ export function ResultsPage() {
   const [pagedPlans, setPagedPlans] = useState<Plan[]>([]);
   const [totalPages, setTotalPages] = useState(1);
   const [safePage, setSafePage] = useState(1);
+
+  useEffect(() => {
+    const changed = prevFrom.current !== from || prevTo.current !== to;
+
+    prevFrom.current = from;
+    prevTo.current = to;
+
+    if (changed) {
+      setParams(sp, setSp, { page: "1" });
+    }
+  }, [from, to, sp, setSp]);
 
   useEffect(() => {
     let cancelled = false;
@@ -57,17 +73,11 @@ export function ResultsPage() {
   }, [from, to, sort, page]);
 
   function changeSort(next: "price_asc" | "price_desc") {
-    const nextSp = new URLSearchParams(sp);
-    nextSp.set("sort", next);
-    nextSp.set("page", "1");
-
-    setSp(nextSp);
+    setParams(sp, setSp, { sort: next, page: "1" });
   }
 
   function changePage(nextPage: number) {
-    const nextSp = new URLSearchParams(sp);
-    nextSp.set("page", String(nextPage));
-    setSp(nextSp);
+    setParams(sp, setSp, { page: String(nextPage) });
   }
 
   return (

@@ -30,6 +30,8 @@ export function SearchPage() {
     if (to) p.set("to", to);
     if (date) p.set("date", date);
     p.set("pax", String(Math.max(1, pax)));
+    p.set("sort", "price_asc");
+    p.set("page", "1");
 
     nav(`/results?${p.toString()}`);
   }

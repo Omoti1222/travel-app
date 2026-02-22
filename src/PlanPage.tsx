@@ -9,6 +9,8 @@ export function PlanPage() {
   const date = getString(sp, "date");
   const pax = getIntMin(sp, "pax", 1, 1);
   const backUrl = getReturnTo(sp);
+  console.log("PlanPage returnTo raw = ", sp.get("returnTo"));
+  console.log("PlanPage backUrl =", backUrl);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

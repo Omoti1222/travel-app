@@ -2,16 +2,17 @@ import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useState } from "react";
 import { createBookingUsecase } from "./usecases/createBookingUsecase";
 import { toAppError } from "./domain/errors";
+import { getIntMin, getReturnTo, getString } from "./utils/query";
 
 type Phase = "editing" | "submitting" | "confirmed";
 
 export function BookPage() {
   const { planId } = useParams();
   const [sp] = useSearchParams();
-  const date = sp.get("date") ?? "";
-  const pax = Math.max(1, Number(sp.get("pax") ?? "1"));
-  const returnTo = sp.get("returnTo");
-  const backUrl = returnTo ? decodeURIComponent(returnTo) : "/results";
+  const date = getString(sp, "date");
+  const pax = getIntMin(sp, "pax", 1, 1);
+
+  const backUrl = getReturnTo(sp);
 
   const [phase, setPhase] = useState<Phase>("editing");
   const [error, setError] = useState<string | null>(null);
